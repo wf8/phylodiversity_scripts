@@ -37,7 +37,7 @@ def get_sequences(taxid):
     records = Entrez.read(handle)
     gi_list = records["IdList"]
     gi_str = ",".join(gi_list)
-    print(gi_str)
+    print("Found GenBank GIs: " + gi_str)
     handle = Entrez.efetch(db="nuccore", id=gi_str, rettype="gb", retmode="text")
     from Bio import SeqIO
     records = SeqIO.parse(handle, "gb")
@@ -88,7 +88,7 @@ def main():
         # dont overload genbank
         time.sleep(0.1)
 
-    print("\nDownloading sequences for each taxid...\n")
+    print("\nDownloading sequences for each taxid...\nKeeping the longest sequence for each taxon...\n")
     from Bio import Entrez
     from Bio import SeqIO
     final_records = []
@@ -105,7 +105,7 @@ def main():
             if longest_seq != None:
                 final_records.append(longest_seq)
     
-    print("Generating unaligned FASTA file...\n")
+    print("\nGenerating unaligned FASTA file...\n")
     SeqIO.write(final_records, "output_unaligned.fasta", "fasta")
 
     print("Making alignment with MAFFT...")

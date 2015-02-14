@@ -1,5 +1,5 @@
 Rhodiola_sacra
 rhodiola_kirilowii
-blah blah
+not_in_genbank
 Oenothera_speciosa
 Oenothera_villaricae

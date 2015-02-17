@@ -76,6 +76,8 @@ def main():
     print("\n\nmatrix_maker.py\n\n")
     
     print("Getting all taxid...\n")
+    print("Writing taxids to file taxids.txt...\n")
+    taxids_file = open("taxids.txt", "w")
     name_file = open(taxa_file)
     names = name_file.readlines()
     taxids = []
@@ -83,41 +85,66 @@ def main():
     for name in names:
         name = "%s" %(name.split()[0])
         taxid = get_taxon_id(name)
-        print(name + "\t" + taxid)
+        name_taxid_text = name + "\t" + taxid
+        print(name_taxid_text)
+        taxids_file.write(name_taxid_text + "\n")
         taxids.append( taxid )
         # dont overload genbank
         time.sleep(0.1)
+    taxids_file.close()
 
-    print("\nDownloading sequences for each taxid...\nKeeping the longest sequence for each taxon...\n")
+    print("\nDownloading sequences for each taxid...\n") #Keeping the longest sequence for each taxon...\n")
     from Bio import Entrez
     from Bio import SeqIO
     final_records = []
     for taxid in taxids:
         if taxid != "not found":
             records = get_sequences(taxid)
+            # keep all records
+            final_records = final_records + records
+
             # find the longest sequence
-            longest_len = 0
-            longest_seq = None
-            for record in records:
-                if len(record) > longest_len:
-                    longest_len = len(record)
-                    longest_seq = record
-            if longest_seq != None:
-                final_records.append(longest_seq)
+            #longest_len = 0
+            #longest_seq = None
+            #for record in records:
+            #    if len(record) > longest_len:
+            #        longest_len = len(record)
+            #        longest_seq = record
+            #if longest_seq != None:
+            #    final_records.append(longest_seq)
     
-    print("\nGenerating unaligned FASTA file...\n")
-    SeqIO.write(final_records, "output_unaligned.fasta", "fasta")
+    print("\nGenerating unaligned FASTA file with GenBank formatted description...\n")
+    SeqIO.write(final_records, "output_unaligned_gb_format.fasta", "fasta")
+
+    print("Generating unaligned FASTA file with custom formatted description...\n")
+    unaligned_file = open("output_unaligned_custom_format.fasta", "w")
+    for record in final_records:
+        # remove the organism name from the description
+        description = record.description
+        if description.find(record.annotations["organism"] + " ") != -1:
+            description = description.replace(record.annotations["organism"] + " ", "")
+        # custom format for Andrew: >Organism name_accession_description
+        description = record.annotations["organism"] + "_" + record.id + "_" + description
+        description = description.replace(" ", "_")
+        unaligned_file.write(">" + description + "\n")
+        unaligned_file.write(str(record.seq) + "\n")
+    unaligned_file.close()
+
 
     print("Making alignment with MAFFT...")
-    from Bio.Align.Applications import MafftCommandline
-    mafft_cline = MafftCommandline(input="output_unaligned.fasta")
-    mafft_cline.set_parameter("--auto", True)
-    mafft_cline.set_parameter("--adjustdirection", True)
-    print(str(mafft_cline))
-    stdout, stderr = mafft_cline()
-    print("Writing alignment to FASTA file...\n")
-    with open("output_aligned.fasta", "w") as handle:
-        handle.write(stdout)
+    try:
+        from Bio.Align.Applications import MafftCommandline
+        mafft_cline = MafftCommandline(input="output_unaligned_custom_format.fasta")
+        mafft_cline.set_parameter("--auto", True)
+        mafft_cline.set_parameter("--adjustdirection", True)
+        print(str(mafft_cline))
+        stdout, stderr = mafft_cline()
+        print("Writing alignment to FASTA file...\n")
+        with open("output_aligned.fasta", "w") as handle:
+            handle.write(stdout)
+    except:
+        print("Problem finding MAFFT, alignment skipped.")
+        
     print("Done!\n")
 
 

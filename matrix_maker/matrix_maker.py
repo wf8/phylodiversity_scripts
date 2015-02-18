@@ -102,6 +102,8 @@ def main():
             records = get_sequences(taxid)
             # keep all records
             final_records = final_records + records
+            # dont overload genbank
+            time.sleep(0.2)
 
             # find the longest sequence
             #longest_len = 0

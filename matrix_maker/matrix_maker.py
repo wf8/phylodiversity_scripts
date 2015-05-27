@@ -11,77 +11,55 @@ License: GNU GPLv3 http://www.gnu.org/licenses/gpl.html
 """
 
 
+import argparse
+import time
+from taxon import Taxon
+
+
 # Configurations: edit these!
-email = "freyman@berkeley.edu"
-gene_names = ["rbcL", "rbcl", "RBCL", "Rbcl"]
-taxa_file = "input.txt"
+#email = "freyman@berkeley.edu"
+#gene_names = ["rbcL", "rbcl", "RBCL", "Rbcl"]
+#taxa_file = "input.txt"
 
-
-def get_sequences(taxid):
-    """
-    Searches Entrez Nucleotide database for taxid and gene names and 
-    downloads results.
-    """
-    from Bio import Entrez
-    Entrez.email = email
-    # (txid202994[Organism] AND (rbcL[All Fields] OR internal transcribed spacer[All Fields])
-    term = "txid" + taxid + "[Organism] AND ("
-    for i, gene in enumerate(gene_names):
-        if i == 0:
-            term = term + gene + "[All Fields]"
-        else:
-            term = term + " OR " + gene + "[All Fields]"
-    term = term + ")"
-    print("Using search term: " + term)
-    handle = Entrez.esearch(db="nuccore", term=term)
-    records = Entrez.read(handle)
-    gi_list = records["IdList"]
-    gi_str = ",".join(gi_list)
-    print("Found GenBank GIs: " + gi_str)
-    handle = Entrez.efetch(db="nuccore", id=gi_str, rettype="gb", retmode="text")
-    from Bio import SeqIO
-    records = SeqIO.parse(handle, "gb")
-    final_records = []
-    for record in records:
-        final_records.append(record)
-    return final_records
-
-
-def get_taxon_id(taxon):
-    """
-    Gets the taxid from entrez taxonomy.
-    """
-    import urllib
-    import re
-    toolname = "matrix_maker"
-    params = {
-        'db': 'taxonomy',
-        'tool': toolname,
-        'email': email,
-        'term': taxon,
-        'rettype': 'xml',
-    }
-    url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?'
-    url = url + urllib.urlencode(params)
-    data = urllib.urlopen(url).read()
-    if re.search('<Id>(\S+)</Id>', data):
-        taxid = re.search('<Id>(\S+)</Id>', data).group(1)
-    else:
-        taxid='not found'
-    return taxid
 
 
 def main():
-    
+
+    # parse the command line arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--email", "-e", help="Email address for NCBI database searches.")
+    parser.add_argument("--genes", "-g", help="Text file that contains a list of all gene names.")
+    parser.add_argument("--species", "-s", help="Text file that contains a list of all species binomials and their synonyms.")
+    parser.add_argument("--taxids", "-t", help="Text file that contains a list of all taxids. Optional, use this to avoid repeating the NCBI taxid lookups.")
+    args = parser.parse_args()
+
     print("\n\nmatrix_maker.py\n\n")
-    
+
+    if not args.email:
+        print("NCBI requires an email address for database searches. Please use the --email flag to specify an email address.")
+        sys.exit(0)
+
+    if not args.species:
+        print("Please specify a list of taxa to search for.")
+        sys.exit(0)
+
+    if not args.genes:
+        print("Please specify a list of genes to search for.")
+        sys.exit(0)
+
+    # list of all taxon objects
+    taxa = []
+
+    # check for taxid
+
+
+
     print("Getting all taxid...\n")
     print("Writing taxids to file taxids.txt...\n")
     taxids_file = open("taxids.txt", "w")
     name_file = open(taxa_file)
     names = name_file.readlines()
     taxids = []
-    import time
     for name in names:
         name = "%s" %(name.split()[0])
         taxid = get_taxon_id(name)
@@ -133,19 +111,19 @@ def main():
     unaligned_file.close()
 
 
-    print("Making alignment with MAFFT...")
-    try:
-        from Bio.Align.Applications import MafftCommandline
-        mafft_cline = MafftCommandline(input="output_unaligned_custom_format.fasta")
-        mafft_cline.set_parameter("--auto", True)
-        mafft_cline.set_parameter("--adjustdirection", True)
-        print(str(mafft_cline))
-        stdout, stderr = mafft_cline()
-        print("Writing alignment to FASTA file...\n")
-        with open("output_aligned.fasta", "w") as handle:
-            handle.write(stdout)
-    except:
-        print("Problem finding MAFFT, alignment skipped.")
+#    print("Making alignment with MAFFT...")
+#    try:
+#        from Bio.Align.Applications import MafftCommandline
+#        mafft_cline = MafftCommandline(input="output_unaligned_custom_format.fasta")
+#        mafft_cline.set_parameter("--auto", True)
+#        mafft_cline.set_parameter("--adjustdirection", True)
+#        print(str(mafft_cline))
+#        stdout, stderr = mafft_cline()
+#        print("Writing alignment to FASTA file...\n")
+#        with open("output_aligned.fasta", "w") as handle:
+#            handle.write(stdout)
+#    except:
+#        print("Problem finding MAFFT, alignment skipped.")
         
     print("Done!\n")
 

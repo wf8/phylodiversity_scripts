@@ -10,10 +10,28 @@ from Bio import Entrez
 from Bio import SeqIO
 
 
+
+class Gene(object):
+    """
+    Class responsible for managing the search terms of genes we are searching for in NCBI.
+    """
+
+
+    name = ""           # name of gene region
+    gene_names = []     # list of search terms for this gene
+    exclusions = []     # list of search terms to exclude for this gene
+
+    
+    def __init__(self, name=""):
+        self.name = name
+
+
+
 class Taxon(object):
     """
     Class responsible for managing the data for each taxon.
     """
+
 
     binomial = ""           # genus_species
     taxid = ""              # NCBI taxid
@@ -64,31 +82,33 @@ class Taxon(object):
                     self.taxid = re.search('<Id>(\S+)</Id>', data).group(1)
                     break
             # if taxid is still not found
-            if taxid == '':
+            if self.taxid == '':
                 self.taxid='not found'
+        return self.taxid
 
 
-    def get_sequences(self, email, gene_names):
+    def get_sequences(self, email, gene):
         """
         Searches Entrez Nucleotide database for taxid and and a list of gene names and
         downloads results. Appends the resulting list of Bio.SeqRecords to self.sequences.
         """
         Entrez.email = email
+        # TODO: handle search term exclusions!!!
         # (txid202994[Organism] AND (rbcL[All Fields] OR internal transcribed spacer[All Fields])
         term = "txid" + self.taxid + "[Organism] AND ("
-        for i, gene in enumerate(gene_names):
+        for i, name in enumerate(gene.gene_names):
             if i == 0:
-                term = term + gene + "[All Fields]"
+                term = term + name + "[All Fields]"
             else:
-                term = term + " OR " + gene + "[All Fields]"
+                term = term + " OR " + name + "[All Fields]"
         term = term + ")"
-        print("Using search term: " + term)
+        #print("Using search term: " + term)
         handle = Entrez.esearch(db="nuccore", term=term)
         records = Entrez.read(handle)
         gi_list = records["IdList"]
         gi_str = ",".join(gi_list)
-        print("Found GenBank GIs: " + gi_str)
+        #print("Found GenBank GIs: " + gi_str)
         handle = Entrez.efetch(db="nuccore", id=gi_str, rettype="gb", retmode="text")
         records = SeqIO.parse(handle, "gb")
         self.sequences.append(records)
-
+        return self.sequences

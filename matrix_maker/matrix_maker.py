@@ -2,8 +2,8 @@
 """
 matrix_maker.py
 
-A simple script that finds the NCBI taxid for a list of taxa, and
-then searches GenBank for a given gene using the taxids. The script
+A simple utility that finds the NCBI taxid for a list of taxa, and
+then searches GenBank for a set of genes using the taxids. The script
 then downloads the sequences and produces a MAFFT alignment.
 
 Copyright 2015 Will Freyman - freyman@berkeley.edu
@@ -125,9 +125,9 @@ def main():
         taxids_file.close()
         print("\nWriting all taxids to file taxids.csv...")
 
-    print("\nDownloading sequences from NCBI...\n") 
+    print("\nDownloading sequences from NCBI...") 
     for gene in genes:
-        print("Searching for gene: " + gene.name)
+        print("\nSearching for gene: " + gene.name)
         i = 1
         for taxon in taxa:
             # update status
@@ -140,7 +140,7 @@ def main():
                 # dont overload genbank
                 time.sleep(0.2)
 
-        print("\nGenerating unaligned FASTA file...\n")
+        print("\nGenerating unaligned FASTA file...")
         unaligned_file = open(gene.name + ".fasta", "w")
         for taxon in taxa:
             record = taxon.get_longest_seq(gene.name, max_seq_length)
@@ -152,30 +152,40 @@ def main():
                 unaligned_file.write(str(record.seq) + "\n\n")
         unaligned_file.close()
 
-#    print("Generating summary results spreadsheet...\n")
-#    summary = open("result.csv", "w")
-#    header = "taxon,"
-#    for gene in genes:
-#        header += gene.name + ","
-#    summary.write(header)
-#    for taxon in taxa:
-#        for gene in genes:
+        print("Making alignment with MAFFT...")
+        try:
+            from Bio.Align.Applications import MafftCommandline
+            mafft_cline = MafftCommandline(input=gene.name + ".fasta")
+            mafft_cline.set_parameter("--auto", True)
+            mafft_cline.set_parameter("--adjustdirection", True)
+            print(str(mafft_cline))
+            stdout, stderr = mafft_cline()
+            print("Writing alignment to FASTA file...")
+            with open("aligned_" + gene.name + ".fasta", "w") as handle:
+                handle.write(stdout)
+        except:
+            print("Problem finding MAFFT, alignment skipped.")
+
+    print("\nGenerating summary results spreadsheet...\n")
+    summary = open("result.csv", "w")
+    header = "taxon,"
+    for gene in genes:
+        header += gene.name + ","
+    summary.write(header + "\n")
+    for taxon in taxa:
+        accessions = taxon.binomial + ","
+        for gene in genes:
+            # each column will be the longest sequences accession
+            record = taxon.get_longest_seq(gene.name, max_seq_length)
+            if record != None:    
+                accessions += record.id + ","
+            else:
+                accessions += ","
+        summary.write(accessions + "\n")
+    summary.close()
     print("Done!\n")
 
 
-#    print("Making alignment with MAFFT...")
-#    try:
-#        from Bio.Align.Applications import MafftCommandline
-#        mafft_cline = MafftCommandline(input="output_unaligned_custom_format.fasta")
-#        mafft_cline.set_parameter("--auto", True)
-#        mafft_cline.set_parameter("--adjustdirection", True)
-#        print(str(mafft_cline))
-#        stdout, stderr = mafft_cline()
-#        print("Writing alignment to FASTA file...\n")
-#        with open("output_aligned.fasta", "w") as handle:
-#            handle.write(stdout)
-#    except:
-#        print("Problem finding MAFFT, alignment skipped.")
         
 
 

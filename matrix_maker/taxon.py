@@ -17,13 +17,10 @@ class Gene(object):
     """
 
 
-    name = ""           # name of gene region
-    gene_names = []     # list of search terms for this gene
-    exclusions = []     # list of search terms to exclude for this gene
-
-    
     def __init__(self, name=""):
-        self.name = name
+        self.name = name         # name of gene region
+        self.gene_names = []     # list of search terms for this gene
+        self.exclusions = []     # list of search terms to exclude for this gene
 
 
 
@@ -33,18 +30,14 @@ class Taxon(object):
     """
 
 
-    binomial = ""           # genus_species
-    taxid = ""              # NCBI taxid
-    synonyms = []           # list of synonym
-    sequences = []          # list of lists of Bio.SeqRecord (each list is a different gene region)
-
-
     def __init__(self, binomial, taxid=""):
         """
         Optionally accept the NCBI taxid.
         """
-        self.binomial = binomial
-        self.taxid = taxid
+        self.binomial = binomial    # genus_species
+        self.taxid = taxid          # NCBI taxid
+        self.synonyms = []          # list of synonym
+        self.sequences = {}         # a dictionary holding lists of Bio.SeqRecords, each key is a gene name
 
 
     def get_taxid(self, email):
@@ -91,9 +84,9 @@ class Taxon(object):
         """
         Searches Entrez Nucleotide database for taxid and and a list of gene names and
         downloads results. Appends the resulting list of Bio.SeqRecords to self.sequences.
+        Exclude any search term exclusions found in the records description.
         """
         Entrez.email = email
-        # TODO: handle search term exclusions!!!
         # (txid202994[Organism] AND (rbcL[All Fields] OR internal transcribed spacer[All Fields])
         term = "txid" + self.taxid + "[Organism] AND ("
         for i, name in enumerate(gene.gene_names):
@@ -110,5 +103,40 @@ class Taxon(object):
         #print("Found GenBank GIs: " + gi_str)
         handle = Entrez.efetch(db="nuccore", id=gi_str, rettype="gb", retmode="text")
         records = SeqIO.parse(handle, "gb")
-        self.sequences.append(records)
-        return self.sequences
+        final_records = []
+        for record in records:
+            exclude = False
+            # check to make sure exclusions are not in the description
+            for exclusion in gene.exclusions:
+                if exclusion in record.description:
+                    exclude = True
+                    break
+            # check to make sure the search terms are actually in the description 
+            # (they might have been in other parts of the record)
+            include = False
+            for name in gene.gene_names:
+                if name in record.description:
+                    include = True
+                    break
+            if not exclude and include:
+                final_records.append(record)
+        self.sequences[gene.name] = final_records
+        return final_records
+
+
+    def get_longest_seq(self, gene_name, max_seq_length = -1):
+        """
+        Returns the longest SeqRecord shorter than max_seq_length for a given gene.
+        """
+        try:
+            records = self.sequences[gene_name]
+        except:
+            records = []
+        longest_len = 0
+        longest_seq = None
+        for record in records:
+            if len(record) < max_seq_length or max_seq_length == -1:
+                if len(record) > longest_len:
+                    longest_len = len(record)
+                    longest_seq = record
+        return longest_seq

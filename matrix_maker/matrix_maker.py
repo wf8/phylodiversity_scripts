@@ -84,7 +84,7 @@ def main():
             print("Found taxids text file, reading taxids...\n")
             taxidsreader = csv.reader(csvfile, delimiter=",")
             for row in taxidsreader:
-                taxa.append(taxon(row[0], row[1]))
+                taxa.append(Taxon(row[0], row[1]))
     else:
         print("No taxids text file found.\n")
 
@@ -99,6 +99,7 @@ def main():
             # update status
             percent = str(round(100 * i/float(num_lines), 2))
             sys.stdout.write('\r' + 'Completed: ' + str(i) + '/' + str(num_lines) + ' (' + percent + '%)')
+            sys.stdout.flush()
             i += 1
             # check to see if we already have a taxid for this species
             found = False
@@ -132,34 +133,33 @@ def main():
             # update status
             percent = str(round(100 * i/float(len(taxa)), 2))
             sys.stdout.write('\r' + 'Completed: ' + str(i) + '/' + str(num_lines) + ' (' + percent + '%)')
+            sys.stdout.flush()
             i += 1
             if taxon.taxid != "not found":
                 taxon.get_sequences(email, gene)
                 # dont overload genbank
                 time.sleep(0.2)
-        
-                # find the longest sequence
-                #longest_len = 0
-                #longest_seq = None
-                #for record in records:
-                #    if len(record) > longest_len:
-                #        longest_len = len(record)
-                #        longest_seq = record
-                #if longest_seq != None:
-                #    final_records.append(longest_seq)
 
         print("\nGenerating unaligned FASTA file...\n")
         unaligned_file = open(gene.name + ".fasta", "w")
         for taxon in taxa:
-            #TODO: optionally include only the longest sequence
-            for record in taxon.sequences:
-                if len(record) < max_seq_length and max_seq_length != -1: 
-                    # custom format for Andrew: >Organism name_accession_description
-                    description = taxon.binomial + "_" + record.id + "_" + record.description
-                    description = description.replace(" ", "_")
-                    unaligned_file.write(">" + description + "\n")
-                    unaligned_file.write(str(record.seq) + "\n")
+            record = taxon.get_longest_seq(gene.name, max_seq_length)
+            if record != None:
+                # output format: >binomial_accession_description
+                description = taxon.binomial + "_" + record.id + "_" + record.description
+                description = description.replace(" ", "_")
+                unaligned_file.write(">" + description + "\n")
+                unaligned_file.write(str(record.seq) + "\n\n")
         unaligned_file.close()
+
+#    print("Generating summary results spreadsheet...\n")
+#    summary = open("result.csv", "w")
+#    header = "taxon,"
+#    for gene in genes:
+#        header += gene.name + ","
+#    summary.write(header)
+#    for taxon in taxa:
+#        for gene in genes:
     print("Done!\n")
 
 

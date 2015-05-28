@@ -78,20 +78,20 @@ def main():
     taxa = []
 
     # check for taxid
-    print("Checking for taxids text file...")
+    print("Checking for taxids csv file...")
     if args.taxids and os.path.isfile(args.taxids):
         with open(args.taxids, 'rb') as csvfile:
-            print("Found taxids text file, reading taxids...\n")
+            print("Found taxids csv file, reading taxids...\n")
             taxidsreader = csv.reader(csvfile, delimiter=",")
             for row in taxidsreader:
                 taxa.append(Taxon(row[0], row[1]))
     else:
-        print("No taxids text file found.\n")
+        print("No taxids csv file found.\n")
 
     # open species list file, get synonyms and any missing taxids
     with open(args.species, 'rb') as csvfile:
         print("Checking list of species, getting missing taxids from NCBI...")
-        taxids_file = open("taxids.txt", "w")
+        taxids_file = open("taxids.csv", "w")
         namesreader = csv.reader(csvfile, delimiter=",")
         i = 1
         num_lines = sum(1 for line in open(args.species))
@@ -123,7 +123,7 @@ def main():
                     taxon.synonyms.append(row[i])
                 taxa.append(taxon)
         taxids_file.close()
-        print("\nWriting all taxids to file taxids.txt...")
+        print("\nWriting all taxids to file taxids.csv...")
 
     print("\nDownloading sequences from NCBI...\n") 
     for gene in genes:

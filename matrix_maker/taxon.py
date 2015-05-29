@@ -101,25 +101,31 @@ class Taxon(object):
         gi_list = records["IdList"]
         gi_str = ",".join(gi_list)
         #print("Found GenBank GIs: " + gi_str)
-        handle = Entrez.efetch(db="nuccore", id=gi_str, rettype="gb", retmode="text")
-        records = SeqIO.parse(handle, "gb")
-        final_records = []
-        for record in records:
-            exclude = False
-            # check to make sure exclusions are not in the description
-            for exclusion in gene.exclusions:
-                if exclusion in record.description:
-                    exclude = True
-                    break
-            # check to make sure the search terms are actually in the description 
-            # (they might have been in other parts of the record)
-            include = False
-            for name in gene.gene_names:
-                if name in record.description:
-                    include = True
-                    break
-            if not exclude and include:
-                final_records.append(record)
+        try:
+            handle = Entrez.efetch(db="nuccore", id=gi_str, rettype="gb", retmode="text")
+            records = SeqIO.parse(handle, "gb")
+            final_records = []
+            for record in records:
+                exclude = False
+                # check to make sure exclusions are not in the description
+                for exclusion in gene.exclusions:
+                    if exclusion in record.description:
+                        exclude = True
+                        break
+                # check to make sure the search terms are actually in the description 
+                # (they might have been in other parts of the record)
+                include = False
+                for name in gene.gene_names:
+                    if name in record.description:
+                        include = True
+                        break
+                if not exclude and include:
+                    final_records.append(record)
+        except Exception as e:
+            print("\nCaught error while downloading from NCBI: " + str(e))
+            print("Trying again...")
+            time.sleep(0.5)
+            return self.get_sequences(email, gene)
         self.sequences[gene.name] = final_records
         return final_records
 

@@ -108,8 +108,8 @@ def main():
                     found = True
                     taxids_file.write(taxon.binomial + "," + taxon.taxid + "\n")
                     # add synonyms
-                    for i in range(1, len(row)):
-                        taxon.synonyms.append(row[i])
+                    for j in range(1, len(row)):
+                        taxon.synonyms.append(row[j])
                     break
             if not found:
                 # get the taxid from NCBI
@@ -119,8 +119,8 @@ def main():
                 time.sleep(0.1)
                 taxids_file.write(taxon.binomial + "," + taxon.taxid + "\n")
                 # add synonyms
-                for i in range(1, len(row)):
-                    taxon.synonyms.append(row[i])
+                for j in range(1, len(row)):
+                    taxon.synonyms.append(row[j])
                 taxa.append(taxon)
         taxids_file.close()
         print("\nWriting all taxids to file taxids.csv...")

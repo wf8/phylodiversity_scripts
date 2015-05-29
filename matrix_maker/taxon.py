@@ -96,12 +96,12 @@ class Taxon(object):
                 term = term + " OR " + name + "[All Fields]"
         term = term + ")"
         #print("Using search term: " + term)
-        handle = Entrez.esearch(db="nuccore", term=term)
-        records = Entrez.read(handle)
-        gi_list = records["IdList"]
-        gi_str = ",".join(gi_list)
-        #print("Found GenBank GIs: " + gi_str)
         try:
+            handle = Entrez.esearch(db="nuccore", term=term)
+            records = Entrez.read(handle)
+            gi_list = records["IdList"]
+            gi_str = ",".join(gi_list)
+            #print("Found GenBank GIs: " + gi_str)
             handle = Entrez.efetch(db="nuccore", id=gi_str, rettype="gb", retmode="text")
             records = SeqIO.parse(handle, "gb")
             final_records = []

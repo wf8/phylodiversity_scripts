@@ -60,7 +60,7 @@ class Taxon(object):
             'db': 'taxonomy',
             'tool': toolname,
             'email': email,
-            'term': self.binomial,
+            'term': self.binomial.replace(' ', '_'),
             'rettype': 'xml',
         }
         url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?'

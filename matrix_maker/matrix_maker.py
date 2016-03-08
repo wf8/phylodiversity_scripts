@@ -250,16 +250,16 @@ def main():
                         taxon.synonyms.append(row[j])
                     break
             if not found:
-                # get the taxid from NCBI
                 taxon = Taxon(row[0])
-                taxon.get_taxid(email)
-                # dont overload genbank
-                time.sleep(0.1)
-                taxids_file.write(taxon.binomial + "," + taxon.taxid + "\n")
                 # add synonyms
                 for j in range(1, len(row)):
                     taxon.synonyms.append(row[j])
                 taxa.append(taxon)
+                # get the taxid from NCBI
+                taxon.get_taxid(email)
+                # dont overload genbank
+                time.sleep(0.1)
+                taxids_file.write(taxon.binomial + "," + taxon.taxid + "\n")
         taxids_file.close()
         print("\nWriting all taxids to file taxids.csv...")
 
